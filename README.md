@@ -1,6 +1,16 @@
 # 🛡️ SQL Injection Güvenlik Analizi Projesi
 
+**Mini Web Application Vulnerability Project - OPTION 1**
+
 Bu proje, Vulnerability and Security dersi kapsamında, web uygulamalarındaki güvenlik açıklarını anlamak, simüle etmek ve analiz etmek amacıyla geliştirilmiştir.
+
+## 📋 Proje Gereksinimleri (OPTION 1)
+
+✅ **Küçük web uygulaması geliştirildi** (localhost'ta çalışıyor)  
+✅ **En az bir güvenlik açığı içeriyor** (SQL Injection)  
+✅ **Açık tespit edildi ve exploit edildi** (kontrollü ortamda)  
+✅ **Açık düzeltildi ve doğrulandı** (artık exploit edilemiyor)  
+✅ **Gerçek sistemlere saldırı yapılmadı** (sadece localhost)
 
 ## 🎯 Projenin Amacı
 
@@ -129,19 +139,31 @@ cursor.execute(query, (username,))
 
 ```
 SecurityProje/
-├── app.py                 # Güvensiz versiyon (SQL Injection açığı ile)
-├── app_secure.py          # Güvenli versiyon (Parametreli sorgular ile)
-├── init_db.py             # Veritabanı başlatma scripti
-├── requirements.txt       # Python bağımlılıkları
-├── README.md             # Bu dosya
-├── users.db              # Güvensiz versiyon veritabanı (otomatik oluşur)
-├── users_secure.db       # Güvenli versiyon veritabanı (otomatik oluşur)
+├── app.py                      # Güvensiz versiyon (SQL Injection açığı ile)
+├── app_secure.py               # Güvenli versiyon (Parametreli sorgular ile)
+├── init_db.py                  # Veritabanı başlatma scripti
+├── requirements.txt            # Python bağımlılıkları
+├── README.md                   # Bu dosya
+├── VULNERABILITY_REPORT.md     # Detaylı güvenlik açığı raporu
+├── EXPLOIT_GUIDE.md            # Exploit adımları rehberi
+├── FIX_VERIFICATION.md         # Düzeltme doğrulama raporu
+├── setup.sh                    # Kurulum scripti
+├── run.sh                      # Çalıştırma scripti
+├── .gitignore                  # Git ignore dosyası
 └── templates/
-    ├── index.html        # Güvensiz versiyon ana sayfa
-    ├── result.html       # Güvensiz versiyon sonuç sayfası
-    ├── index_secure.html # Güvenli versiyon ana sayfa
-    └── result_secure.html # Güvenli versiyon sonuç sayfası
+    ├── index.html              # Güvensiz versiyon ana sayfa
+    ├── result.html             # Güvensiz versiyon sonuç sayfası
+    ├── index_secure.html       # Güvenli versiyon ana sayfa
+    └── result_secure.html      # Güvenli versiyon sonuç sayfası
 ```
+
+## 📚 Dokümantasyon
+
+Proje için detaylı dokümantasyon:
+
+- **[VULNERABILITY_REPORT.md](VULNERABILITY_REPORT.md)** - Güvenlik açığı analizi ve raporu
+- **[EXPLOIT_GUIDE.md](EXPLOIT_GUIDE.md)** - Adım adım exploit rehberi
+- **[FIX_VERIFICATION.md](FIX_VERIFICATION.md)** - Düzeltme doğrulama raporu
 
 ## 🧪 Test Senaryoları
 
@@ -182,6 +204,22 @@ Bu proje **sadece eğitim amaçlı** geliştirilmiştir. Bu kodları production 
 - [OWASP SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection)
 - [Flask Security Best Practices](https://flask.palletsprojects.com/en/latest/security/)
 - [SQLite Parameterized Queries](https://docs.python.org/3/library/sqlite3.html)
+
+## 🎓 Akademik Ödev Bilgileri
+
+**Ders:** Vulnerability and Security  
+**Proje Tipi:** OPTION 1 - Mini Web Application Vulnerability Project  
+**Randevu:** [Google Calendar](https://calendar.app.google/szALSyquoaQMVDXLA)
+
+## 📊 Proje Özeti
+
+Bu proje, OPTION 1 gereksinimlerini tam olarak karşılamaktadır:
+
+1. ✅ **Küçük Web Uygulaması:** Flask tabanlı, localhost'ta çalışan uygulama
+2. ✅ **Güvenlik Açığı:** SQL Injection (OWASP Top 10)
+3. ✅ **Exploit:** Kontrollü ortamda başarıyla exploit edildi
+4. ✅ **Düzeltme:** Parametreli sorgular ile düzeltildi
+5. ✅ **Doğrulama:** Tüm exploit denemeleri başarıyla engellendi
 
 ## 👨‍💻 Geliştirici
 
