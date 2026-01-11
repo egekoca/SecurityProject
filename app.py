@@ -242,7 +242,7 @@ def menu():
 
 @app.route('/search', methods=['POST'])
 def search():
-    """Menu search with SQL Injection vulnerability"""
+    """Menu search with SQL Injection protection"""
     if not session.get('logged_in'):
         flash('Lütfen önce giriş yapın', 'error')
         return redirect(url_for('index'))
@@ -253,17 +253,18 @@ def search():
         flash('Lütfen bir arama terimi girin', 'error')
         return redirect(url_for('menu'))
     
-    # VULNERABLE CODE: Direct string interpolation
-    query = f"SELECT * FROM menu_items WHERE name LIKE '%{search_term}%' OR description LIKE '%{search_term}%'"
+    # SECURE CODE: Parameterized query
+    query_template = "SELECT * FROM menu_items WHERE name LIKE ? OR description LIKE ?"
+    search_pattern = f'%{search_term}%'
     
-    log_query(search_term, query)
+    log_query(search_term, f"SELECT * FROM menu_items WHERE name LIKE '%{search_term}%' OR description LIKE '%{search_term}%' (parameterized)")
     
     try:
         conn = sqlite3.connect(DB_FILE)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        cursor.execute(query)
+        cursor.execute(query_template, (search_pattern, search_pattern))
         results = cursor.fetchall()
         menu_items = [dict(row) for row in results]
         
@@ -277,7 +278,7 @@ def search():
         return render_template('search_results.html', 
                              menu_items=menu_items,
                              search_term=search_term,
-                             executed_query=query,
+                             executed_query=query_template,
                              user=session)
             
     except sqlite3.Error as e:
@@ -316,7 +317,7 @@ def show_database():
 
 @app.route('/admin/add_user', methods=['POST'])
 def add_user():
-    """Add user with SQL Injection vulnerability (admin only)"""
+    """Add user with SQL Injection protection (admin only)"""
     if not session.get('logged_in'):
         flash('Lütfen önce giriş yapın', 'error')
         return redirect(url_for('index'))
@@ -334,17 +335,17 @@ def add_user():
         flash('Kullanıcı adı ve şifre gereklidir', 'error')
         return redirect(url_for('show_database'))
     
-    # VULNERABLE CODE: Direct string interpolation (SQL Injection vulnerability)
-    # This is intentionally insecure for educational purposes
-    query = f"INSERT INTO users (username, password, role, full_name) VALUES ('{username}', '{password}', '{role}', '{full_name}')"
+    # SECURE CODE: Parameterized query
+    query_template = "INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)"
     
-    log_query(f"username={username}, password={password}, role={role}, full_name={full_name}", query)
+    log_query(f"username={username}, password={password}, role={role}, full_name={full_name}", 
+              f"INSERT INTO users (username, password, role, full_name) VALUES ('{username}', '{password}', '{role}', '{full_name}') (parameterized)")
     
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         
-        cursor.execute(query)
+        cursor.execute(query_template, (username, password, role, full_name))
         conn.commit()
         conn.close()
         
@@ -358,21 +359,21 @@ def add_user():
 
 @app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
 def delete_user(user_id):
-    """Delete user (admin only)"""
+    """Delete user with SQL Injection protection (admin only)"""
     if not session.get('logged_in') or session.get('role') != 'admin':
         flash('Bu işlem için admin yetkisi gereklidir', 'error')
         return redirect(url_for('show_database'))
     
-    # VULNERABLE CODE: Direct string interpolation
-    query = f"DELETE FROM users WHERE id = {user_id}"
+    # SECURE CODE: Parameterized query
+    query_template = "DELETE FROM users WHERE id = ?"
     
-    log_query(f"user_id={user_id}", query)
+    log_query(f"user_id={user_id}", f"DELETE FROM users WHERE id = {user_id} (parameterized)")
     
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         
-        cursor.execute(query)
+        cursor.execute(query_template, (user_id,))
         conn.commit()
         conn.close()
         

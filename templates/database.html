@@ -252,10 +252,9 @@
                 <button type="submit" class="btn">➕ Kullanıcı Ekle</button>
             </form>
 
-            <div class="warning-box">
-                <strong>⚠️ SQL Injection Açığı:</strong>
-                Bu form SQL Injection açığı içerir. Kullanıcı adı alanına SQL kodu enjekte edilebilir.
-                Örnek: <code>test', 'pass', 'admin', 'Hacker') --</code>
+            <div class="warning-box" style="background: #d4edda; border-color: #28a745; color: #155724;">
+                <strong>✓ Güvenli Form:</strong>
+                Bu form parametreli sorgular kullanır. SQL Injection saldırıları engellenir.
             </div>
         </div>
         {% else %}
