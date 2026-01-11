@@ -286,7 +286,7 @@
                         {% for value in row.values() %}
                         <td>{{ value }}</td>
                         {% endfor %}
-                        {% if table == 'users' and table == 'users' and is_admin %}
+                        {% if table == 'users' and is_admin %}
                         <td>
                             {% if row.id != user.user_id %}
                             <form method="POST" action="{{ url_for('delete_user', user_id=row.id) }}" style="display: inline;">
