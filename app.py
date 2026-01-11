@@ -157,7 +157,7 @@ def index():
 def login():
     """Login handler with SQL Injection vulnerability"""
     username = request.form.get('username', '').strip()
-    password = request.form.get('password', '').strip()
+    password = request.form.get('password', '').strip() or ''  # Allow empty password
     
     if not username:
         flash('Lütfen kullanıcı adı girin', 'error')

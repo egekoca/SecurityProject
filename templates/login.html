@@ -221,7 +221,7 @@
 
             <div class="form-group">
                 <label for="password">Şifre:</label>
-                <input type="password" id="password" name="password" placeholder="Şifrenizi girin" required>
+                <input type="password" id="password" name="password" placeholder="Şifrenizi girin (opsiyonel)">
             </div>
 
             <button type="submit" class="btn">🔐 Giriş Yap</button>
@@ -237,11 +237,12 @@
         <div class="example-box">
             <h3>💡 SQL Injection Test:</h3>
             <p style="color: #666; font-size: 0.9em; margin-bottom: 8px;">
-                Kullanıcı adı alanına şunu yazın (şifre boş bırakın):
+                Kullanıcı adı alanına şunu yazın (şifre alanını boş bırakın):
             </p>
             <code>' OR '1'='1' --</code>
             <p style="margin-top: 10px; color: #666; font-size: 0.85em;">
-                Bu payload ile şifre olmadan giriş yapabilirsiniz!
+                Bu payload ile şifre olmadan giriş yapabilirsiniz!<br>
+                <strong>Not:</strong> Şifre alanı artık opsiyoneldir.
             </p>
         </div>
     </div>
