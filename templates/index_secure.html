@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Injection Demo - Secure Version</title>
+    <title>Restoran Menü Sistemi - Güvenli Versiyon</title>
     <style>
         * {
             margin: 0;
@@ -26,7 +26,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 500px;
+            max-width: 600px;
             width: 100%;
         }
 
@@ -34,14 +34,14 @@
             color: #333;
             text-align: center;
             margin-bottom: 10px;
-            font-size: 2em;
+            font-size: 2.2em;
         }
 
         .subtitle {
             text-align: center;
             color: #666;
             margin-bottom: 30px;
-            font-size: 0.9em;
+            font-size: 1em;
         }
 
         .secure-box {
@@ -101,17 +101,9 @@
             box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn-secondary {
             background: #6c757d;
             margin-top: 10px;
-        }
-
-        .btn-secondary:hover {
-            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
         }
 
         .info-box {
@@ -151,34 +143,32 @@
         .flash-message.error {
             background: #f8d7da;
             color: #721c24;
-            border: 1px solid #f5c6cb;
         }
 
         .flash-message.success {
             background: #d4edda;
             color: #155724;
-            border: 1px solid #c3e6cb;
         }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 25px;
-            }
+        .info-link {
+            text-align: center;
+            margin-top: 15px;
+        }
 
-            h1 {
-                font-size: 1.5em;
-            }
+        .info-link a {
+            color: #11998e;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛡️ SQL Injection Demo</h1>
-        <p class="subtitle">Secure Version - Parameterized Queries</p>
+        <h1>🍕 Restoran Menü Sistemi</h1>
+        <p class="subtitle">Güvenli Versiyon - Parametreli Sorgular</p>
 
         <div class="secure-box">
-            <strong>✓ Secure Version:</strong>
-            This application uses parameterized queries to prevent SQL Injection attacks.
+            <strong>✓ Güvenli Versiyon:</strong>
+            Bu uygulama parametreli sorgular kullanarak SQL Injection saldırılarını önler.
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -191,27 +181,30 @@
             {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('search') }}">
             <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" placeholder="Enter username" required autofocus>
+                <label for="search">Yemek Ara:</label>
+                <input type="text" id="search" name="search" placeholder="Örn: Pizza, Pasta, Salata..." required autofocus>
             </div>
 
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn">🔍 Ara</button>
         </form>
 
         <form method="POST" action="{{ url_for('reset') }}" style="margin-top: 10px;">
-            <button type="submit" class="btn btn-secondary">Reset Database</button>
+            <button type="submit" class="btn btn-secondary">🔄 Veritabanını Sıfırla</button>
         </form>
 
         <div class="info-box">
-            <h3>💡 Try SQL Injection (It won't work!):</h3>
+            <h3>💡 SQL Injection Denemesi (Çalışmayacak!):</h3>
             <code>' OR '1'='1</code>
             <p style="margin-top: 10px; color: #666; font-size: 0.9em;">
-                This payload will be treated as literal text, not as SQL code!
+                Bu payload literal string olarak işlenecek, SQL kodu olarak çalıştırılmayacak!
             </p>
+        </div>
+
+        <div class="info-link">
+            <a href="{{ url_for('show_database') }}">📊 Veritabanı Yapısını Görüntüle</a>
         </div>
     </div>
 </body>
 </html>
-

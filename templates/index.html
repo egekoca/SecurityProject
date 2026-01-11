@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Injection Demo - Login</title>
+    <title>Restoran Menü Sistemi - Menü Arama</title>
     <style>
         * {
             margin: 0;
@@ -26,7 +26,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 500px;
+            max-width: 600px;
             width: 100%;
         }
 
@@ -34,14 +34,14 @@
             color: #333;
             text-align: center;
             margin-bottom: 10px;
-            font-size: 2em;
+            font-size: 2.2em;
         }
 
         .subtitle {
             text-align: center;
             color: #666;
             margin-bottom: 30px;
-            font-size: 0.9em;
+            font-size: 1em;
         }
 
         .warning-box {
@@ -101,10 +101,6 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn-secondary {
             background: #6c757d;
             margin-top: 10px;
@@ -160,6 +156,26 @@
             border: 1px solid #c3e6cb;
         }
 
+        .flash-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .info-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .info-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .info-link a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 25px;
@@ -173,12 +189,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>🛡️ SQL Injection Demo</h1>
-        <p class="subtitle">Vulnerability and Security - Educational Project</p>
+        <h1>🍕 Restoran Menü Sistemi</h1>
+        <p class="subtitle">Yemek Arama ve Menü Yönetimi</p>
 
         <div class="warning-box">
-            <strong>⚠️ Warning:</strong>
-            This application contains intentional security vulnerabilities for educational purposes only.
+            <strong>⚠️ Uyarı:</strong>
+            Bu uygulama kasıtlı güvenlik açıkları içerir. Sadece eğitim amaçlıdır.
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -191,27 +207,32 @@
             {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('search') }}">
             <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" placeholder="Enter username" required autofocus>
+                <label for="search">Yemek Ara:</label>
+                <input type="text" id="search" name="search" placeholder="Örn: Pizza, Pasta, Salata..." required autofocus>
             </div>
 
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn">🔍 Ara</button>
         </form>
 
         <form method="POST" action="{{ url_for('reset') }}" style="margin-top: 10px;">
-            <button type="submit" class="btn btn-secondary">Reset Database</button>
+            <button type="submit" class="btn btn-secondary">🔄 Veritabanını Sıfırla</button>
         </form>
 
         <div class="example-box">
-            <h3>💡 Try this SQL Injection payload:</h3>
+            <h3>💡 SQL Injection Test Payload'ları:</h3>
             <code>' OR '1'='1</code>
+            <code>' UNION SELECT * FROM customers --</code>
+            <code>' UNION SELECT * FROM employees --</code>
             <p style="margin-top: 10px; color: #666; font-size: 0.9em;">
-                Enter this in the username field to bypass authentication!
+                Bu payload'ları arama kutusuna girerek veritabanındaki tüm verileri görebilirsiniz!
             </p>
+        </div>
+
+        <div class="info-link">
+            <a href="{{ url_for('show_database') }}">📊 Veritabanı Yapısını Görüntüle</a>
         </div>
     </div>
 </body>
 </html>
-

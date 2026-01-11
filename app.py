@@ -1,7 +1,7 @@
 """
-SQL Injection Vulnerability Demo Application
-This application demonstrates SQL Injection vulnerabilities for educational purposes.
-WARNING: This code contains intentional security vulnerabilities. DO NOT use in production!
+Restoran Menü Sistemi - SQL Injection Açığı ile
+Bu uygulama, restoran menü arama sistemini simüle eder ve SQL Injection açığını gösterir.
+UYARI: Bu kod kasıtlı güvenlik açıkları içerir. Production'da kullanmayın!
 """
 
 from flask import Flask, render_template, request, redirect, url_for, flash
@@ -13,30 +13,108 @@ app = Flask(__name__)
 app.secret_key = 'demo_secret_key_change_in_production'
 
 # Database file path
-DB_FILE = 'users.db'
+DB_FILE = 'restaurant.db'
 
 def init_database():
-    """Initialize the database with sample users"""
+    """Initialize the database with restaurant data"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
-    # Create users table
+    # Create tables
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS menu_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            price REAL NOT NULL,
+            description TEXT
         )
     ''')
     
-    # Insert sample users (only if table is empty)
-    cursor.execute('SELECT COUNT(*) FROM users')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            phone TEXT,
+            address TEXT
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER,
+            item_id INTEGER,
+            quantity INTEGER,
+            total_price REAL,
+            order_date TEXT,
+            FOREIGN KEY (customer_id) REFERENCES customers(id),
+            FOREIGN KEY (item_id) REFERENCES menu_items(id)
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            position TEXT NOT NULL,
+            salary REAL,
+            email TEXT UNIQUE NOT NULL
+        )
+    ''')
+    
+    # Insert sample data (only if tables are empty)
+    cursor.execute('SELECT COUNT(*) FROM menu_items')
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
-        cursor.execute("INSERT INTO users (username, password) VALUES ('user1', 'password1')")
-        cursor.execute("INSERT INTO users (username, password) VALUES ('test', 'test123')")
+        # Menu items
+        menu_data = [
+            ('Margherita Pizza', 'Pizza', 85.00, 'Domates, mozzarella, fesleğen'),
+            ('Pepperoni Pizza', 'Pizza', 95.00, 'Domates, mozzarella, pepperoni'),
+            ('Spaghetti Carbonara', 'Pasta', 75.00, 'Makarna, yumurta, peynir, pastırma'),
+            ('Fettuccine Alfredo', 'Pasta', 70.00, 'Makarna, krema, parmesan'),
+            ('Caesar Salad', 'Salata', 45.00, 'Marul, parmesan, kruton, caesar sos'),
+            ('Greek Salad', 'Salata', 50.00, 'Domates, salatalık, zeytin, peynir'),
+            ('Grilled Salmon', 'Ana Yemek', 120.00, 'Izgara somon, sebze, pilav'),
+            ('Beef Steak', 'Ana Yemek', 150.00, 'Dana eti, patates, sebze'),
+            ('Tiramisu', 'Tatlı', 40.00, 'Kahveli İtalyan tatlısı'),
+            ('Chocolate Cake', 'Tatlı', 35.00, 'Çikolatalı pasta'),
+        ]
+        cursor.executemany('INSERT INTO menu_items (name, category, price, description) VALUES (?, ?, ?, ?)', menu_data)
+        
+        # Customers
+        customers_data = [
+            ('Ahmet Yılmaz', 'ahmet@example.com', '05551234567', 'İstanbul, Kadıköy'),
+            ('Ayşe Demir', 'ayse@example.com', '05559876543', 'Ankara, Çankaya'),
+            ('Mehmet Kaya', 'mehmet@example.com', '05551112233', 'İzmir, Konak'),
+            ('Fatma Şahin', 'fatma@example.com', '05554445566', 'Bursa, Nilüfer'),
+        ]
+        cursor.executemany('INSERT INTO customers (name, email, phone, address) VALUES (?, ?, ?, ?)', customers_data)
+        
+        # Employees
+        employees_data = [
+            ('Ali Veli', 'Şef', 15000.00, 'ali.veli@restaurant.com'),
+            ('Zeynep Ak', 'Garson', 8000.00, 'zeynep.ak@restaurant.com'),
+            ('Can Öz', 'Kasiyer', 7500.00, 'can.oz@restaurant.com'),
+            ('Elif Yıldız', 'Müdür', 20000.00, 'elif.yildiz@restaurant.com'),
+        ]
+        cursor.executemany('INSERT INTO employees (name, position, salary, email) VALUES (?, ?, ?, ?)', employees_data)
+        
+        # Orders
+        orders_data = [
+            (1, 1, 2, 170.00, '2025-01-15'),
+            (2, 3, 1, 75.00, '2025-01-16'),
+            (1, 7, 1, 120.00, '2025-01-17'),
+            (3, 2, 3, 285.00, '2025-01-18'),
+        ]
+        cursor.executemany('INSERT INTO orders (customer_id, item_id, quantity, total_price, order_date) VALUES (?, ?, ?, ?, ?)', orders_data)
+        
         conn.commit()
-        print("[+] Database initialized with sample users")
+        print("[+] Veritabanı örnek verilerle başlatıldı")
+        print("    - Menü öğeleri: 10")
+        print("    - Müşteriler: 4")
+        print("    - Çalışanlar: 4")
+        print("    - Siparişler: 4")
     
     conn.close()
 
@@ -44,65 +122,88 @@ def log_query(user_input, executed_query):
     """Log user input and executed SQL query to terminal"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n[{timestamp}]")
-    print(f"[!] User Input: {user_input}")
-    print(f"[!] Executed SQL Query: {executed_query}")
-    print("-" * 60)
+    print(f"[!] Kullanıcı Girdisi: {user_input}")
+    print(f"[!] Çalıştırılan SQL Sorgusu: {executed_query}")
+    print("-" * 70)
 
 @app.route('/')
 def index():
-    """Main login page"""
+    """Main menu search page"""
     return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
-def login():
-    """Login handler with SQL Injection vulnerability"""
-    username = request.form.get('username', '').strip()
+@app.route('/search', methods=['POST'])
+def search():
+    """Menu search with SQL Injection vulnerability"""
+    search_term = request.form.get('search', '').strip()
     
-    if not username:
-        flash('Please enter a username', 'error')
+    if not search_term:
+        flash('Lütfen bir arama terimi girin', 'error')
         return redirect(url_for('index'))
     
     # VULNERABLE CODE: Direct string interpolation (SQL Injection vulnerability)
     # This is intentionally insecure for educational purposes
-    query = f"SELECT * FROM users WHERE username = '{username}'"
+    query = f"SELECT * FROM menu_items WHERE name LIKE '%{search_term}%' OR description LIKE '%{search_term}%'"
     
     # Log the query to terminal
-    log_query(username, query)
+    log_query(search_term, query)
     
     try:
         conn = sqlite3.connect(DB_FILE)
+        conn.row_factory = sqlite3.Row  # Return rows as dictionaries
         cursor = conn.cursor()
         
         # Execute the vulnerable query
         cursor.execute(query)
-        user = cursor.fetchone()
+        results = cursor.fetchall()
+        
+        # Convert rows to dictionaries
+        menu_items = [dict(row) for row in results]
         
         conn.close()
         
-        if user:
-            # Success - user found
-            flash(f'✅ SUCCESS! Welcome {user[1]}', 'success')
-            return render_template('result.html', 
-                                 username=user[1], 
-                                 user_input=username,
-                                 executed_query=query,
-                                 success=True)
+        if menu_items:
+            flash(f'{len(menu_items)} sonuç bulundu', 'success')
         else:
-            # User not found
-            flash('❌ ERROR: User not found', 'error')
-            return render_template('result.html',
-                                 username=None,
-                                 user_input=username,
-                                 executed_query=query,
-                                 success=False)
+            flash('Sonuç bulunamadı', 'info')
+        
+        return render_template('results.html', 
+                             menu_items=menu_items,
+                             search_term=search_term,
+                             executed_query=query)
             
     except sqlite3.Error as e:
-        flash(f'Database error: {str(e)}', 'error')
-        return render_template('result.html',
-                             username=None,
-                             user_input=username,
+        flash(f'Veritabanı hatası: {str(e)}', 'error')
+        return render_template('results.html',
+                             menu_items=[],
+                             search_term=search_term,
                              executed_query=query,
-                             success=False)
+                             error=str(e))
+
+@app.route('/database')
+def show_database():
+    """Show all database tables (for demonstration)"""
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Get all tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        
+        # Get data from each table
+        db_data = {}
+        for table in tables:
+            cursor.execute(f"SELECT * FROM {table}")
+            rows = cursor.fetchall()
+            db_data[table] = [dict(row) for row in rows]
+        
+        conn.close()
+        
+        return render_template('database.html', db_data=db_data, tables=tables)
+    except sqlite3.Error as e:
+        flash(f'Veritabanı hatası: {str(e)}', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/reset', methods=['POST'])
 def reset():
@@ -110,23 +211,22 @@ def reset():
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
     init_database()
-    flash('Database reset successfully', 'success')
+    flash('Veritabanı başarıyla sıfırlandı', 'success')
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    print("\n" + "=" * 60)
-    print("🛡️  SQL Injection Vulnerability Demo")
-    print("=" * 60)
-    print("\n⚠️  WARNING: This application contains intentional security vulnerabilities!")
-    print("   This is for educational purposes only.\n")
+    print("\n" + "=" * 70)
+    print("🍕 Restoran Menü Sistemi - SQL Injection Demo")
+    print("=" * 70)
+    print("\n⚠️  UYARI: Bu uygulama kasıtlı güvenlik açıkları içerir!")
+    print("   Sadece eğitim amaçlıdır.\n")
     
     # Initialize database
     init_database()
     
-    print("\n[+] Starting Flask server...")
-    print("[+] Open your browser and navigate to: http://127.0.0.1:5000")
-    print("[+] Press CTRL+C to stop the server\n")
-    print("=" * 60 + "\n")
+    print("\n[+] Flask sunucusu başlatılıyor...")
+    print("[+] Tarayıcınızdan şu adrese gidin: http://127.0.0.1:5000")
+    print("[+] Sunucuyu durdurmak için CTRL+C tuşlarına basın\n")
+    print("=" * 70 + "\n")
     
     app.run(debug=True, host='127.0.0.1', port=5000)
-
