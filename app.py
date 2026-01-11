@@ -286,7 +286,7 @@ def search():
 
 @app.route('/database')
 def show_database():
-    """Show all database tables (for demonstration)"""
+    """Show all database tables with admin panel"""
     if not session.get('logged_in'):
         flash('Lütfen önce giriş yapın', 'error')
         return redirect(url_for('index'))
@@ -307,10 +307,80 @@ def show_database():
         
         conn.close()
         
-        return render_template('database.html', db_data=db_data, tables=tables, user=session)
+        is_admin = session.get('role') == 'admin'
+        
+        return render_template('database.html', db_data=db_data, tables=tables, user=session, is_admin=is_admin)
     except sqlite3.Error as e:
         flash(f'Veritabanı hatası: {str(e)}', 'error')
         return redirect(url_for('menu'))
+
+@app.route('/admin/add_user', methods=['POST'])
+def add_user():
+    """Add user with SQL Injection vulnerability (admin only)"""
+    if not session.get('logged_in'):
+        flash('Lütfen önce giriş yapın', 'error')
+        return redirect(url_for('index'))
+    
+    if session.get('role') != 'admin':
+        flash('Bu işlem için admin yetkisi gereklidir', 'error')
+        return redirect(url_for('show_database'))
+    
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
+    full_name = request.form.get('full_name', '').strip()
+    role = request.form.get('role', 'customer').strip()
+    
+    if not username or not password:
+        flash('Kullanıcı adı ve şifre gereklidir', 'error')
+        return redirect(url_for('show_database'))
+    
+    # VULNERABLE CODE: Direct string interpolation (SQL Injection vulnerability)
+    # This is intentionally insecure for educational purposes
+    query = f"INSERT INTO users (username, password, role, full_name) VALUES ('{username}', '{password}', '{role}', '{full_name}')"
+    
+    log_query(f"username={username}, password={password}, role={role}, full_name={full_name}", query)
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        cursor.execute(query)
+        conn.commit()
+        conn.close()
+        
+        flash(f'✅ Kullanıcı başarıyla eklendi: {username}', 'success')
+    except sqlite3.IntegrityError:
+        flash('❌ Bu kullanıcı adı zaten kullanılıyor', 'error')
+    except sqlite3.Error as e:
+        flash(f'Veritabanı hatası: {str(e)}', 'error')
+    
+    return redirect(url_for('show_database'))
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    """Delete user (admin only)"""
+    if not session.get('logged_in') or session.get('role') != 'admin':
+        flash('Bu işlem için admin yetkisi gereklidir', 'error')
+        return redirect(url_for('show_database'))
+    
+    # VULNERABLE CODE: Direct string interpolation
+    query = f"DELETE FROM users WHERE id = {user_id}"
+    
+    log_query(f"user_id={user_id}", query)
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        cursor.execute(query)
+        conn.commit()
+        conn.close()
+        
+        flash('✅ Kullanıcı başarıyla silindi', 'success')
+    except sqlite3.Error as e:
+        flash(f'Veritabanı hatası: {str(e)}', 'error')
+    
+    return redirect(url_for('show_database'))
 
 @app.route('/reset', methods=['POST'])
 def reset():

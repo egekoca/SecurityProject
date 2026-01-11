@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Veritabanı Yapısı</title>
+    <title>Veritabanı Yönetimi - Admin Panel</title>
     <style>
         * {
             margin: 0;
@@ -13,9 +13,29 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             min-height: 100vh;
             padding: 20px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
         }
 
         .container {
@@ -32,14 +52,74 @@
             margin-bottom: 30px;
         }
 
-        .back-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
+        .admin-panel {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .admin-panel h2 {
+            color: #667eea;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            padding: 6px 12px;
+            font-size: 0.85em;
         }
 
         .table-section {
@@ -81,13 +161,110 @@
             padding: 20px;
             color: #666;
         }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .flash-message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .flash-message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .admin-form {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <h1>📊 Veritabanı Yönetimi</h1>
+        <div>
+            <a href="{{ url_for('menu') }}">← Menü</a>
+            <a href="{{ url_for('logout') }}" style="margin-left: 10px;">Çıkış</a>
+        </div>
+    </nav>
+
     <div class="container">
-        <a href="{{ url_for('index') }}" class="back-btn">← Geri Dön</a>
-        
-        <h1>📊 Veritabanı Yapısı</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% if is_admin %}
+        <div class="admin-panel">
+            <h2>👤 Admin Paneli - Kullanıcı Yönetimi</h2>
+            
+            <form method="POST" action="{{ url_for('add_user') }}">
+                <div class="admin-form">
+                    <div class="form-group">
+                        <label for="username">Kullanıcı Adı *</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Şifre *</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="full_name">Tam İsim</label>
+                        <input type="text" id="full_name" name="full_name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="role">Rol</label>
+                        <select id="role" name="role">
+                            <option value="customer">Müşteri</option>
+                            <option value="employee">Çalışan</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">➕ Kullanıcı Ekle</button>
+            </form>
+
+            <div class="warning-box">
+                <strong>⚠️ SQL Injection Açığı:</strong>
+                Bu form SQL Injection açığı içerir. Kullanıcı adı alanına SQL kodu enjekte edilebilir.
+                Örnek: <code>test', 'pass', 'admin', 'Hacker') --</code>
+            </div>
+        </div>
+        {% else %}
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <strong>ℹ️ Bilgi:</strong> Bu sayfayı görüntülemek için admin yetkisi gereklidir.
+        </div>
+        {% endif %}
+
+        <h1>📊 Veritabanı Tabloları</h1>
 
         {% for table in tables %}
         <div class="table-section">
@@ -99,6 +276,9 @@
                         {% for key in db_data[table][0].keys() %}
                         <th>{{ key }}</th>
                         {% endfor %}
+                        {% if table == 'users' and is_admin %}
+                        <th>İşlemler</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -107,6 +287,17 @@
                         {% for value in row.values() %}
                         <td>{{ value }}</td>
                         {% endfor %}
+                        {% if table == 'users' and is_admin %}
+                        <td>
+                            {% if row.id != user.user_id %}
+                            <form method="POST" action="{{ url_for('delete_user', user_id=row.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-danger" onclick="return confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')">🗑️ Sil</button>
+                            </form>
+                            {% else %}
+                            <span style="color: #999;">Mevcut kullanıcı</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
