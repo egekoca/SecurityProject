@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restoran Giriş - Güvenli Versiyon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .secure-box {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+            color: #155724;
+            font-size: 0.9em;
+        }
+
+        .secure-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #11998e;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .demo-accounts {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .demo-accounts h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .demo-accounts p {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .flash-message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🍕</div>
+        <h1>Restoran Giriş</h1>
+        <p class="subtitle">Güvenli Versiyon</p>
+
+        <div class="secure-box">
+            <strong>✓ Güvenli Versiyon:</strong>
+            Bu uygulama parametreli sorgular kullanarak SQL Injection saldırılarını önler.
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Kullanıcı Adı:</label>
+                <input type="text" id="username" name="username" placeholder="Kullanıcı adınızı girin" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Şifre:</label>
+                <input type="password" id="password" name="password" placeholder="Şifrenizi girin" required>
+            </div>
+
+            <button type="submit" class="btn">🔐 Giriş Yap</button>
+        </form>
+
+        <div class="demo-accounts">
+            <h3>📋 Demo Hesaplar:</h3>
+            <p><strong>admin</strong> / admin123</p>
+            <p><strong>ahmet</strong> / ahmet123</p>
+            <p><strong>ayse</strong> / ayse123</p>
+        </div>
+    </div>
+</body>
+</html>
