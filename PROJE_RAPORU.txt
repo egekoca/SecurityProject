@@ -14,14 +14,14 @@ Tarih: 2025
 Bu proje, web uygulamalarında en yaygın görülen güvenlik açıklarından biri olan 
 SQL Injection (SQLi) zafiyetini incelemek, exploit etmek ve düzeltmek amacıyla 
 geliştirilmiştir. Flask framework'ü kullanılarak bir restoran menü yönetim sistemi 
-oluşturulmuş, kasıtlı olarak SQL Injection açıkları içeren bir versiyon ve bu 
-açıkları düzelten güvenli bir versiyon geliştirilmiştir.
+oluşturulmuş, kasıtlı olarak SQL Injection açığı içeren bir versiyon ve bu 
+açığı düzelten güvenli bir versiyon geliştirilmiştir.
 
 ANA BULGULAR:
-- 3 farklı noktada SQL Injection açığı tespit edildi
-- Tüm açıklar başarıyla exploit edildi
-- Parametreli sorgular kullanılarak tüm açıklar düzeltildi
-- Düzeltmeler %100 etkili oldu
+- Login fonksiyonunda SQL Injection açığı tespit edildi
+- Açık başarıyla exploit edildi
+- Parametreli sorgular kullanılarak açık düzeltildi
+- Düzeltme %100 etkili oldu
 
 ================================================================================
 2. PROJE HEDEFLERİ
@@ -35,19 +35,19 @@ Bu projenin temel hedefleri şunlardır:
    - SQLite veritabanı ile çalışan dinamik içerik
 
 2. Güvenlik Açığı Tespiti
-   - SQL Injection açıklarını belirleme
-   - Açıkların neden oluştuğunu analiz etme
-   - Kod seviyesinde açık lokasyonlarını tespit etme
+   - SQL Injection açığını belirleme
+   - Açığın neden oluştuğunu analiz etme
+   - Kod seviyesinde açık lokasyonunu tespit etme
 
-3. Açıkları Exploit Etme
-   - Kontrollü ortamda saldırı senaryoları oluşturma
-   - Farklı SQL Injection tekniklerini test etme
-   - Saldırıların etkisini gözlemleme
+3. Açığı Exploit Etme
+   - Kontrollü ortamda saldırı senaryosu oluşturma
+   - SQL Injection tekniğini test etme
+   - Saldırının etkisini gözlemleme
 
-4. Açıkları Düzeltme
+4. Açığı Düzeltme
    - Güvenli kodlama teknikleri uygulama
    - Parametreli sorgular kullanma
-   - Düzeltmelerin etkinliğini doğrulama
+   - Düzeltmenin etkinliğini doğrulama
 
 ================================================================================
 3. UYGULAMA MİMARİSİ
@@ -73,21 +73,25 @@ Uygulama aşağıdaki tablolardan oluşmaktadır:
 
 3.3 Uygulama Versiyonları
 
-- Güvensiz Versiyon: app.py (Port 5000) - SQL Injection açıkları içerir
+- Güvensiz Versiyon: app.py (Port 5000) - Login'de SQL Injection açığı içerir
 - Güvenli Versiyon: app_secure.py (Port 5001) - Parametreli sorgular kullanır
 
+Not: Uygulamanın diğer fonksiyonları (arama, admin paneli) parametreli sorgular 
+kullanarak güvenli hale getirilmiştir. Sadece login fonksiyonunda kasıtlı olarak 
+SQL Injection açığı bırakılmıştır.
+
 ================================================================================
-4. TESPİT EDİLEN SQL INJECTION AÇIKLARI
+4. TESPİT EDİLEN SQL INJECTION AÇIĞI
 ================================================================================
 
-4.1 AÇIK #1: LOGIN FONKSİYONUNDA SQL INJECTION
+4.1 AÇIK: LOGIN FONKSİYONUNDA SQL INJECTION
 --------------------------------------------------------------------------------
 
 4.1.1 Açığın Konumu
 
 Dosya: app.py
 Fonksiyon: login()
-Satırlar: 156-168
+Satırlar: 156-180
 
 4.1.2 Güvensiz Kod
 
@@ -116,6 +120,23 @@ def login():
         # Execute the vulnerable query
         cursor.execute(query)
         user = cursor.fetchone()
+        
+        conn.close()
+        
+        if user:
+            # Success - user found
+            session['logged_in'] = True
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['role'] = user['role']
+            session['full_name'] = user['full_name']
+            
+            flash(f'✅ Hoş geldiniz, {user["full_name"]}!', 'success')
+            return redirect(url_for('menu'))
+        else:
+            # User not found
+            flash('❌ Kullanıcı adı veya şifre hatalı', 'error')
+            return redirect(url_for('index'))
 
 Kritik Satır: Satır 168
 query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
@@ -155,147 +176,26 @@ Konum: Bu bölümün altına eklenecek
 Dosya adı: 03_unauthorized_access_success.png
 Konum: Bu bölümün altına eklenecek
 
---------------------------------------------------------------------------------
+4.1.5 Ek Saldırı Senaryoları
 
-4.2 AÇIK #2: MENÜ ARAMA FONKSİYONUNDA SQL INJECTION
---------------------------------------------------------------------------------
-
-4.2.1 Açığın Konumu
-
-Dosya: app.py
-Fonksiyon: search()
-Satırlar: 247-257
-
-4.2.2 Güvensiz Kod
-
-@app.route('/search', methods=['POST'])
-def search():
-    """Menu search with SQL Injection vulnerability"""
-    if not session.get('logged_in'):
-        flash('Lütfen önce giriş yapın', 'error')
-        return redirect(url_for('index'))
-    
-    search_term = request.form.get('search', '').strip()
-    
-    if not search_term:
-        flash('Lütfen bir arama terimi girin', 'error')
-        return redirect(url_for('menu'))
-    
-    # VULNERABLE CODE: Direct string interpolation
-    query = f"SELECT * FROM menu_items WHERE name LIKE '%{search_term}%' OR description LIKE '%{search_term}%'"
-
-Kritik Satır: Satır 257
-query = f"SELECT * FROM menu_items WHERE name LIKE '%{search_term}%' OR description LIKE '%{search_term}%'"
-
-4.2.3 Açığın Nedeni
-
-- Arama terimi doğrudan LIKE sorgusuna ekleniyor
-- UNION SELECT ile diğer tablolardan veri çekilebiliyor
-- Veritabanı yapısı ifşa edilebiliyor
-
-4.2.4 Saldırı Senaryosu
-
-Payload 1: Tüm Menüyü Görüntüleme
-Arama: ' OR '1'='1
+Payload 2: Belirli Kullanıcıya Erişim
+Kullanıcı Adı: admin' --
+Şifre: (boş)
 
 Oluşturulan SQL Sorgusu:
-SELECT * FROM menu_items WHERE name LIKE '%' OR '1'='1%' OR description LIKE '%' OR '1'='1%'
+SELECT * FROM users WHERE username = 'admin' --' AND password = ''
 
-Payload 2: Müşteri Bilgilerini Çekme
-Arama: ' UNION SELECT * FROM customers --
+Sonuç: Admin kullanıcısına şifre kontrolü olmadan erişim sağlanır.
 
-Oluşturulan SQL Sorgusu:
-SELECT * FROM menu_items WHERE name LIKE '%' UNION SELECT * FROM customers --%' OR description LIKE '%' UNION SELECT * FROM customers --%'
+Payload 3: Tüm Kullanıcıları Listeleme
+Kullanıcı Adı: ' OR '1'='1' UNION SELECT * FROM users --
+Şifre: (boş)
 
-Sonuç: Müşteri tablosundaki tüm hassas bilgiler (isim, email, telefon, adres) görüntülenir.
+Not: Bu payload SQLite'da UNION SELECT ile çalışabilir ancak bu örnekte 
+basit OR koşulu yeterli olmaktadır.
 
-[EKRAN RESMİ 4] Menü arama sayfasında UNION SELECT payload'ının girilmesi
-Dosya adı: 04_menu_search_union_payload.png
-Konum: Bu bölümün altına eklenecek
-
-[EKRAN RESMİ 5] UNION SELECT ile çekilen müşteri bilgileri
-Dosya adı: 05_customer_data_exposed.png
-Konum: Bu bölümün altına eklenecek
-
-[EKRAN RESMİ 6] Terminal'de görüntülenen UNION SELECT sorgusu
-Dosya adı: 06_terminal_union_query.png
-Konum: Bu bölümün altına eklenecek
-
---------------------------------------------------------------------------------
-
-4.3 AÇIK #3: ADMIN PANELİ KULLANICI EKLEME FONKSİYONUNDA SQL INJECTION
---------------------------------------------------------------------------------
-
-4.3.1 Açığın Konumu
-
-Dosya: app.py
-Fonksiyon: add_user()
-Satırlar: 320-340
-
-4.3.2 Güvensiz Kod
-
-@app.route('/admin/add_user', methods=['POST'])
-def add_user():
-    """Add user with SQL Injection vulnerability (admin only)"""
-    if not session.get('logged_in'):
-        flash('Lütfen önce giriş yapın', 'error')
-        return redirect(url_for('index'))
-    
-    if session.get('role') != 'admin':
-        flash('Bu işlem için admin yetkisi gereklidir', 'error')
-        return redirect(url_for('show_database'))
-    
-    username = request.form.get('username', '').strip()
-    password = request.form.get('password', '').strip()
-    full_name = request.form.get('full_name', '').strip()
-    role = request.form.get('role', 'customer').strip()
-    
-    if not username or not password:
-        flash('Kullanıcı adı ve şifre gereklidir', 'error')
-        return redirect(url_for('show_database'))
-    
-    # VULNERABLE CODE: Direct string interpolation (SQL Injection vulnerability)
-    # This is intentionally insecure for educational purposes
-    query = f"INSERT INTO users (username, password, role, full_name) VALUES ('{username}', '{password}', '{role}', '{full_name}')"
-
-Kritik Satır: Satır 340
-query = f"INSERT INTO users (username, password, role, full_name) VALUES ('{username}', '{password}', '{role}', '{full_name}')"
-
-4.3.3 Açığın Nedeni
-
-- Tüm form alanları doğrudan INSERT sorgusuna ekleniyor
-- Kullanıcı adı kontrolü bypass edilebiliyor
-- İstenen role sahip kullanıcı oluşturulabiliyor
-- Veritabanı bütünlüğü bozulabiliyor
-
-4.3.4 Saldırı Senaryosu
-
-Payload:
-Kullanıcı Adı: test', 'hacked', 'admin', 'Hacker') --
-Şifre: anything
-Tam İsim: anything
-Rol: customer
-
-Oluşturulan SQL Sorgusu:
-INSERT INTO users (username, password, role, full_name) VALUES ('test', 'hacked', 'admin', 'Hacker') --', 'anything', 'customer', 'anything')
-
-Açıklama:
-- test' - İlk değeri kapatır
-- , 'hacked', 'admin', 'Hacker') - Yeni değerler ekler
-- -- - Sorgunun geri kalanını yorum satırı yapar
-
-Sonuç: Admin yetkisine sahip yeni bir kullanıcı oluşturulur.
-
-[EKRAN RESMİ 7] Admin panelinde SQL Injection payload'ının girilmesi
-Dosya adı: 07_admin_panel_sql_injection.png
-Konum: Bu bölümün altına eklenecek
-
-[EKRAN RESMİ 8] Oluşturulan admin kullanıcısının veritabanında görüntülenmesi
-Dosya adı: 08_admin_user_created.png
-Konum: Bu bölümün altına eklenecek
-
-[EKRAN RESMİ 9] Terminal'de görüntülenen manipüle edilmiş INSERT sorgusu
-Dosya adı: 09_terminal_insert_query.png
+[EKRAN RESMİ 4] Farklı payload denemeleri
+Dosya adı: 04_different_payloads.png
 Konum: Bu bölümün altına eklenecek
 
 ================================================================================
@@ -304,18 +204,18 @@ Konum: Bu bölümün altına eklenecek
 
 5.1 Çözüm: Parametreli Sorgular (Prepared Statements)
 
-Tüm SQL Injection açıkları, parametreli sorgular kullanılarak düzeltilmiştir. 
+SQL Injection açığı, parametreli sorgular kullanılarak düzeltilmiştir. 
 Parametreli sorgular, SQL kodunu kullanıcı verisinden ayırarak, kullanıcı 
 girdisinin SQL kodu olarak yorumlanmasını engeller.
 
-5.2 DÜZELTME #1: LOGIN FONKSİYONU
+5.2 DÜZELTME: LOGIN FONKSİYONU
 --------------------------------------------------------------------------------
 
 5.2.1 Güvenli Kod
 
 Dosya: app_secure.py
 Fonksiyon: login()
-Satırlar: 156-170
+Satırlar: 156-180
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -340,6 +240,21 @@ def login():
         
         cursor.execute(query_template, (username, password))
         user = cursor.fetchone()
+        
+        conn.close()
+        
+        if user:
+            session['logged_in'] = True
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['role'] = user['role']
+            session['full_name'] = user['full_name']
+            
+            flash(f'✅ Hoş geldiniz, {user["full_name"]}!', 'success')
+            return redirect(url_for('menu'))
+        else:
+            flash('❌ Kullanıcı adı veya şifre hatalı', 'error')
+            return redirect(url_for('index'))
 
 Kritik Değişiklik: Satır 163-164
 query_template = "SELECT * FROM users WHERE username = ? AND password = ?"
@@ -365,147 +280,32 @@ Parametreler: (' OR '1'='1' --, '')
 Sonuç: Veritabanı, kullanıcı adı tam olarak ' OR '1'='1' -- olan bir kullanıcı arar. 
 Böyle bir kullanıcı olmadığı için giriş başarısız olur.
 
-[EKRAN RESMİ 10] Güvenli versiyonda aynı payload ile giriş denemesi
-Dosya adı: 10_secure_version_login_attempt.png
+[EKRAN RESMİ 5] Güvenli versiyonda aynı payload ile giriş denemesi
+Dosya adı: 05_secure_version_login_attempt.png
 Konum: Bu bölümün altına eklenecek
 
-[EKRAN RESMİ 11] Güvenli versiyonda başarısız giriş mesajı
-Dosya adı: 11_secure_login_blocked.png
+[EKRAN RESMİ 6] Güvenli versiyonda başarısız giriş mesajı
+Dosya adı: 06_secure_login_blocked.png
 Konum: Bu bölümün altına eklenecek
 
-[EKRAN RESMİ 12] Terminal'de parametreli sorgu logları
-Dosya adı: 12_terminal_parameterized_query.png
+[EKRAN RESMİ 7] Terminal'de parametreli sorgu logları
+Dosya adı: 07_terminal_parameterized_query.png
 Konum: Bu bölümün altına eklenecek
 
---------------------------------------------------------------------------------
+5.2.4 Normal Kullanım Testi
 
-5.3 DÜZELTME #2: MENÜ ARAMA FONKSİYONU
---------------------------------------------------------------------------------
-
-5.3.1 Güvenli Kod
-
-Dosya: app_secure.py
-Fonksiyon: search()
-Satırlar: 247-260
-
-@app.route('/search', methods=['POST'])
-def search():
-    """Menu search with SQL Injection protection"""
-    if not session.get('logged_in'):
-        flash('Lütfen önce giriş yapın', 'error')
-        return redirect(url_for('index'))
-    
-    search_term = request.form.get('search', '').strip()
-    
-    if not search_term:
-        flash('Lütfen bir arama terimi girin', 'error')
-        return redirect(url_for('menu'))
-    
-    # SECURE CODE: Parameterized query
-    query_template = "SELECT * FROM menu_items WHERE name LIKE ? OR description LIKE ?"
-    search_pattern = f'%{search_term}%'
-    
-    log_query(search_term, 
-              f"SELECT * FROM menu_items WHERE name LIKE '%{search_term}%' OR description LIKE '%{search_term}%' (parameterized)")
-    
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        cursor.execute(query_template, (search_pattern, search_pattern))
-
-Kritik Değişiklik: Satır 257-260
-query_template = "SELECT * FROM menu_items WHERE name LIKE ? OR description LIKE ?"
-search_pattern = f'%{search_term}%'
-cursor.execute(query_template, (search_pattern, search_pattern))
-
-5.3.2 Test Sonuçları
-
-Payload Denemesi:
-Arama: ' UNION SELECT * FROM customers --
+Normal Giriş:
+Kullanıcı Adı: admin
+Şifre: admin123
 
 Oluşturulan Sorgu:
-SELECT * FROM menu_items WHERE name LIKE ? OR description LIKE ?
-Parametreler: ('%' UNION SELECT * FROM customers --%', '%' UNION SELECT * FROM customers --%')
+SELECT * FROM users WHERE username = ? AND password = ?
+Parametreler: ('admin', 'admin123')
 
-Sonuç: UNION SELECT payload'ı literal string olarak işlenir, SQL kodu olarak çalıştırılmaz. 
-Sadece menü öğeleri aranır.
+Sonuç: Normal kullanım her iki versiyonda da başarılı çalışır.
 
-[EKRAN RESMİ 13] Güvenli versiyonda UNION SELECT denemesi
-Dosya adı: 13_secure_union_attempt.png
-Konum: Bu bölümün altına eklenecek
-
-[EKRAN RESMİ 14] Güvenli versiyonda saldırının engellendiği mesajı
-Dosya adı: 14_secure_union_blocked.png
-Konum: Bu bölümün altına eklenecek
-
---------------------------------------------------------------------------------
-
-5.4 DÜZELTME #3: ADMIN PANELİ KULLANICI EKLEME FONKSİYONU
---------------------------------------------------------------------------------
-
-5.4.1 Güvenli Kod
-
-Dosya: app_secure.py
-Fonksiyon: add_user()
-Satırlar: 320-345
-
-@app.route('/admin/add_user', methods=['POST'])
-def add_user():
-    """Add user with SQL Injection protection (admin only)"""
-    if not session.get('logged_in'):
-        flash('Lütfen önce giriş yapın', 'error')
-        return redirect(url_for('index'))
-    
-    if session.get('role') != 'admin':
-        flash('Bu işlem için admin yetkisi gereklidir', 'error')
-        return redirect(url_for('show_database'))
-    
-    username = request.form.get('username', '').strip()
-    password = request.form.get('password', '').strip()
-    full_name = request.form.get('full_name', '').strip()
-    role = request.form.get('role', 'customer').strip()
-    
-    if not username or not password:
-        flash('Kullanıcı adı ve şifre gereklidir', 'error')
-        return redirect(url_for('show_database'))
-    
-    # SECURE CODE: Parameterized query
-    query_template = "INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)"
-    
-    log_query(f"username={username}, password={password}, role={role}, full_name={full_name}", 
-              f"INSERT INTO users (username, password, role, full_name) VALUES ('{username}', '{password}', '{role}', '{full_name}') (parameterized)")
-    
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        
-        cursor.execute(query_template, (username, password, role, full_name))
-        conn.commit()
-
-Kritik Değişiklik: Satır 338-345
-query_template = "INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)"
-cursor.execute(query_template, (username, password, role, full_name))
-
-5.4.2 Test Sonuçları
-
-Payload Denemesi:
-Kullanıcı Adı: test', 'hacked', 'admin', 'Hacker') --
-
-Oluşturulan Sorgu:
-INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)
-Parametreler: ("test', 'hacked', 'admin', 'Hacker') --", "anything", "customer", "anything")
-
-Sonuç: Payload literal string olarak işlenir. Kullanıcı adı tam olarak 
-test', 'hacked', 'admin', 'Hacker') -- olarak kaydedilir. SQL kodu olarak çalıştırılmaz.
-
-[EKRAN RESMİ 15] Güvenli versiyonda admin panelinde SQL Injection denemesi
-Dosya adı: 15_secure_admin_panel_attempt.png
-Konum: Bu bölümün altına eklenecek
-
-[EKRAN RESMİ 16] Güvenli versiyonda payload'ın literal string olarak kaydedilmesi
-Dosya adı: 16_secure_payload_as_string.png
+[EKRAN RESMİ 8] Normal giriş başarısı (her iki versiyonda)
+Dosya adı: 08_normal_login_success.png
 Konum: Bu bölümün altına eklenecek
 
 ================================================================================
@@ -517,25 +317,23 @@ Konum: Bu bölümün altına eklenecek
 Özellik                    | Güvensiz Versiyon                          | Güvenli Versiyon
 ---------------------------|-------------------------------------------|-------------------------------------------
 Login Sorgusu              | f"SELECT * FROM users WHERE username = '{username}'..." | "SELECT * FROM users WHERE username = ?..." + parametreler
-Arama Sorgusu              | f"SELECT * FROM menu_items WHERE name LIKE '%{search_term}%'..." | "SELECT * FROM menu_items WHERE name LIKE ?..." + parametreler
-INSERT Sorgusu             | f"INSERT INTO users ... VALUES ('{username}', ...)" | "INSERT INTO users ... VALUES (?, ...)" + parametreler
-SQL Injection              | Exploit edilebilir                         | Engellendi
+Arama Sorgusu              | Parametreli sorgu (güvenli)                | Parametreli sorgu (güvenli)
+Admin Panel Sorguları      | Parametreli sorgu (güvenli)                | Parametreli sorgu (güvenli)
+SQL Injection (Login)      | Exploit edilebilir                         | Engellendi
 Input Validation            | Yok                                        | Parametreli sorgular
-Güvenlik Seviyesi          | Kritik                                     | Güvenli
+Güvenlik Seviyesi          | Login'de kritik açık                       | Güvenli
 
 6.2 Test Sonuçları Özeti
 
 Test Senaryosu                          | Güvensiz Versiyon        | Güvenli Versiyon
 ----------------------------------------|--------------------------|------------------
 Normal giriş (admin/admin123)          | Başarılı                 | Başarılı
-SQL Injection login (' OR '1'='1' --)   | Yetkisiz erişim          | Engellendi
-Normal arama (Pizza)                   | Çalışıyor                | Çalışıyor
-UNION SELECT arama                     | Veri ifşası              | Engellendi
-Normal kullanıcı ekleme                 | Çalışıyor                | Çalışıyor
-SQL Injection kullanıcı ekleme         | Veritabanı manipülasyonu | Engellendi
+SQL Injection login (' OR '1'='1' --)  | Yetkisiz erişim          | Engellendi
+Normal arama (Pizza)                   | Çalışıyor (güvenli)      | Çalışıyor (güvenli)
+Normal kullanıcı ekleme                 | Çalışıyor (güvenli)      | Çalışıyor (güvenli)
 
-[EKRAN RESMİ 17] Güvensiz ve güvenli versiyonların yan yana karşılaştırması
-Dosya adı: 17_comparison_side_by_side.png
+[EKRAN RESMİ 9] Güvensiz ve güvenli versiyonların yan yana karşılaştırması
+Dosya adı: 09_comparison_side_by_side.png
 Konum: Bu bölümün altına eklenecek
 
 ================================================================================
@@ -546,29 +344,29 @@ Konum: Bu bölümün altına eklenecek
 
 Confidentiality (Gizlilik): YÜKSEK
 - Kullanıcı hesaplarına yetkisiz erişim
-- Hassas müşteri bilgilerinin ifşası (email, telefon, adres)
-- Çalışan bilgilerinin ifşası (maaş, pozisyon)
+- Admin hesabına erişim sağlanabilir
+- Sistem içindeki tüm özelliklere erişim
 
 Integrity (Bütünlük): YÜKSEK
-- Veritabanı manipülasyonu
-- Yetkisiz kullanıcı oluşturma
-- Admin yetkisi ele geçirme
+- Yetkisiz kullanıcılar sisteme girebilir
+- Admin yetkisi ele geçirilebilir
+- Veritabanı manipülasyonu potansiyeli
 
 Availability (Erişilebilirlik): ORTA
 - Hizmet kesintisi yaratmaz
-- Ancak veri bütünlüğü bozulabilir
+- Ancak yetkisiz erişim sağlanabilir
 
 Genel Önem Derecesi: KRİTİK
 
 7.2 Gerçek Dünya Senaryoları
 
-Bu açıklar gerçek dünyada şu sonuçlara yol açabilir:
+Bu açık gerçek dünyada şu sonuçlara yol açabilir:
 
-1. Kimlik Hırsızlığı: Müşteri bilgilerinin çalınması
-2. Finansal Zarar: Yetkisiz siparişler, fiyat manipülasyonu
-3. Yasal Sorunlar: KVKK ihlalleri, veri sızıntısı
-4. İtibar Kaybı: Güven kaybı, müşteri kaybı
-5. İş Sürekliliği: Sistem güvenilirliğinin kaybı
+1. Yetkisiz Erişim: Şifre olmadan sistemlere giriş
+2. Veri Hırsızlığı: Hassas bilgilere erişim
+3. Sistem Manipülasyonu: Yetkisiz işlemler yapılabilir
+4. Yasal Sorunlar: Güvenlik ihlalleri, veri sızıntısı
+5. İtibar Kaybı: Güven kaybı, müşteri kaybı
 
 ================================================================================
 8. ÖNERİLEN İYİLEŞTİRMELER
@@ -584,22 +382,30 @@ Bu açıklar gerçek dünyada şu sonuçlara yol açabilir:
 2. Rate Limiting
    - Brute force saldırılarını önleme
    - IP bazlı erişim kısıtlaması
+   - Başarısız giriş denemelerini sınırlama
 
 3. Password Hashing
    - Şifrelerin hash'lenmesi (bcrypt, argon2)
    - Salt kullanımı
+   - Düz metin şifre saklanmamalı
 
 4. Session Management
    - Güvenli session token'ları
    - Session timeout
+   - CSRF koruması
 
 5. Logging ve Monitoring
    - Şüpheli aktivitelerin loglanması
    - Anomali tespiti
+   - Başarısız giriş denemelerinin izlenmesi
 
 6. Least Privilege Principle
    - Veritabanı kullanıcılarının minimum yetki ile çalışması
    - Read-only kullanıcılar için ayrı hesaplar
+
+7. Two-Factor Authentication (2FA)
+   - Ek güvenlik katmanı
+   - SMS veya authenticator uygulaması
 
 ================================================================================
 9. SONUÇ VE ÖĞRENİLEN DERSLER
@@ -609,10 +415,10 @@ Bu açıklar gerçek dünyada şu sonuçlara yol açabilir:
 
 Bu proje ile:
 
-1. 3 farklı SQL Injection açığı tespit edildi
-2. Tüm açıklar başarıyla exploit edildi
-3. Parametreli sorgular kullanılarak tüm açıklar düzeltildi
-4. Düzeltmeler %100 etkili oldu
+1. Login fonksiyonunda SQL Injection açığı tespit edildi
+2. Açık başarıyla exploit edildi
+3. Parametreli sorgular kullanılarak açık düzeltildi
+4. Düzeltme %100 etkili oldu
 5. Normal uygulama işlevselliği korundu
 
 9.2 Öğrenilen Dersler
@@ -642,10 +448,10 @@ Bu proje ile:
 Kriter                              | Durum
 ------------------------------------|----------
 Gerçekçi web uygulaması geliştirme | Başarılı
-Güvenlik açığı tespiti              | 3 açık tespit edildi
-Açıkları exploit etme               | Tüm açıklar exploit edildi
-Açıkları düzeltme                   | Parametreli sorgular ile düzeltildi
-Düzeltmelerin doğrulanması          | %100 etkili
+Güvenlik açığı tespiti              | Login'de açık tespit edildi
+Açığı exploit etme                  | Açık exploit edildi
+Açığı düzeltme                      | Parametreli sorgular ile düzeltildi
+Düzeltmenin doğrulanması            | %100 etkili
 
 ================================================================================
 10. REFERANSLAR
@@ -673,16 +479,11 @@ Düzeltmelerin doğrulanması          | %100 etkili
 11.1 Proje Dosya Yapısı
 
 SecurityProje/
-├── app.py                      # Güvensiz versiyon (SQL Injection açıkları)
+├── app.py                      # Güvensiz versiyon (Login'de SQL Injection açığı)
 ├── app_secure.py              # Güvenli versiyon (Parametreli sorgular)
 ├── init_db.py                 # Veritabanı başlatma scripti
 ├── requirements.txt            # Python bağımlılıkları
 ├── README.md                   # Proje dokümantasyonu
-├── VULNERABILITY_REPORT.md    # Detaylı güvenlik açığı raporu
-├── EXPLOIT_GUIDE.md           # Exploit rehberi
-├── FIX_VERIFICATION.md        # Düzeltme doğrulama raporu
-├── DEMO_SCRIPT.md             # Demo scripti
-├── PROJE_RAPORU.md            # Markdown format rapor
 ├── PROJE_RAPORU.txt           # Bu rapor (TXT format)
 ├── restaurant.db              # Güvensiz versiyon veritabanı
 ├── restaurant_secure.db       # Güvenli versiyon veritabanı
@@ -691,8 +492,8 @@ SecurityProje/
     ├── login_secure.html      # Güvenli versiyon login
     ├── menu.html              # Menü sayfası
     ├── menu_secure.html       # Güvenli menü sayfası
-    ├── database.html          # Admin paneli (güvensiz)
-    ├── database_secure.html   # Admin paneli (güvenli)
+    ├── database.html          # Admin paneli
+    ├── database_secure.html   # Güvenli admin paneli
     ├── search_results.html    # Arama sonuçları
     └── search_results_secure.html # Güvenli arama sonuçları
 
@@ -703,20 +504,12 @@ Aşağıdaki ekran resimleri raporun ilgili bölümlerine eklenmelidir:
 1. 01_login_sql_injection_payload.png - Bölüm 4.1.4
 2. 02_terminal_manipulated_query.png - Bölüm 4.1.4
 3. 03_unauthorized_access_success.png - Bölüm 4.1.4
-4. 04_menu_search_union_payload.png - Bölüm 4.2.4
-5. 05_customer_data_exposed.png - Bölüm 4.2.4
-6. 06_terminal_union_query.png - Bölüm 4.2.4
-7. 07_admin_panel_sql_injection.png - Bölüm 4.3.4
-8. 08_admin_user_created.png - Bölüm 4.3.4
-9. 09_terminal_insert_query.png - Bölüm 4.3.4
-10. 10_secure_version_login_attempt.png - Bölüm 5.2.3
-11. 11_secure_login_blocked.png - Bölüm 5.2.3
-12. 12_terminal_parameterized_query.png - Bölüm 5.2.3
-13. 13_secure_union_attempt.png - Bölüm 5.3.2
-14. 14_secure_union_blocked.png - Bölüm 5.3.2
-15. 15_secure_admin_panel_attempt.png - Bölüm 5.4.2
-16. 16_secure_payload_as_string.png - Bölüm 5.4.2
-17. 17_comparison_side_by_side.png - Bölüm 6.1
+4. 04_different_payloads.png - Bölüm 4.1.5
+5. 05_secure_version_login_attempt.png - Bölüm 5.2.3
+6. 06_secure_login_blocked.png - Bölüm 5.2.3
+7. 07_terminal_parameterized_query.png - Bölüm 5.2.3
+8. 08_normal_login_success.png - Bölüm 5.2.4
+9. 09_comparison_side_by_side.png - Bölüm 6.1
 
 11.3 Terminal Komutları
 
@@ -733,6 +526,23 @@ python3 app_secure.py
 Veritabanını Sıfırlama:
 rm -f restaurant.db restaurant_secure.db
 python3 app.py  # Otomatik olarak yeniden oluşturulur
+
+11.4 Test Senaryoları
+
+SQL Injection Test:
+1. Güvensiz versiyonu başlat (python3 app.py)
+2. Tarayıcıdan http://127.0.0.1:5000 adresine git
+3. Kullanıcı adı: ' OR '1'='1' --
+4. Şifre: (boş bırak)
+5. Giriş butonuna tıkla
+6. Yetkisiz erişim sağlandığını gözlemle
+
+Güvenli Versiyon Test:
+1. Güvenli versiyonu başlat (python3 app_secure.py)
+2. Tarayıcıdan http://127.0.0.1:5001 adresine git
+3. Aynı payload'ı dene
+4. Giriş başarısız olmalı
+5. Saldırının engellendiğini gözlemle
 
 ================================================================================
 12. RAPOR ONAYI
